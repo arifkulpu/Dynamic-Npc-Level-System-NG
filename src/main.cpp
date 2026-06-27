@@ -17,6 +17,16 @@ void SetupLog() {
     spdlog::flush_on(spdlog::level::trace);
 }
 
+SKSEPluginInfo(
+    .Version = {1, 0, 0, 0},
+    .Name = "DynamicNPCLevelSystem",
+    .Author = "Arif KULPU",
+    .SupportEmail = "",
+    .StructCompatibility = SKSE::StructCompatibility::Independent,
+    .RuntimeCompatibility = SKSE::VersionIndependence::AddressLibrary,
+    .MinimumSKSEVersion = 0
+)
+
 SKSEPluginLoad(const SKSE::LoadInterface *skse) {
     SKSE::Init(skse);
 
