@@ -112,8 +112,11 @@ namespace LevelSystem
 
                 uint16_t npcLevel = actorPtr->GetLevel();
 
-                if (npcLevel < playerLevel) {
-                    uint16_t levelDiff = playerLevel - npcLevel;
+                float extraLevels = actorPtr->AsActorValueOwner()->GetActorValue(RE::ActorValue::kVariable10);
+                uint16_t effectiveLevel = npcLevel + static_cast<uint16_t>(extraLevels);
+
+                if (effectiveLevel < playerLevel) {
+                    uint16_t levelDiff = playerLevel - effectiveLevel;
                     
                     bool isMage = false;
                     bool isArcher = false;
@@ -147,10 +150,23 @@ namespace LevelSystem
                     float healthGain = settings->fHealthGainPerLevel;
                     float magickaGain = settings->fMagickaGainPerLevel;
                     float staminaGain = settings->fStaminaGainPerLevel;
+                    float attackDamageGain = settings->fAttackDamageMultPerLevel;
+                    float spellPowerGain = settings->fSpellPowerModPerLevel;
 
-                    if (isMelee) healthGain *= 1.5f; 
-                    if (isArcher) staminaGain *= 1.5f;
-                    if (isMage) magickaGain *= 1.5f;
+                    if (isMage) {
+                        healthGain *= 0.1f;       // Büyücü canı çok az artmalı
+                        staminaGain *= 0.2f;      
+                        magickaGain *= 2.5f;      // Asıl manaları artmalı
+                    } else if (isArcher) {
+                        healthGain *= 0.8f;       // Okçuların orta canı
+                        staminaGain *= 2.0f;      // Dayanıklılık artmalı
+                        magickaGain *= 0.1f;      
+                    } else if (isMelee) {
+                        healthGain *= 2.0f;       // Tank karakterlerin canı yüksek olacak
+                        staminaGain *= 1.2f;      
+                        magickaGain *= 0.1f;      
+                        attackDamageGain *= 0.2f; // Hasarı çok az olacak
+                    }
 
                     float multiplier = 1.0f;
                     if (IsBoss(actorPtr.get())) {
@@ -165,8 +181,8 @@ namespace LevelSystem
                     float damageResistGain = resistGain * settings->fDamageResistPerLevel;
                     float magicResistGain = resistGain * settings->fMagicResistPerLevel;
                     
-                    float attackDamageGain = resistGain * settings->fAttackDamageMultPerLevel;
-                    float spellPowerGain = resistGain * settings->fSpellPowerModPerLevel;
+                    float finalAttackDamageGain = resistGain * attackDamageGain;
+                    float finalSpellPowerGain = resistGain * spellPowerGain;
 
                     auto avOwner = actorPtr->AsActorValueOwner();
                     
@@ -184,8 +200,11 @@ namespace LevelSystem
                     avOwner->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kPermanent, RE::ActorValue::kResistMagic, magicResistGain);
                     
                     // Mod Damage Multipliers
-                    avOwner->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kPermanent, RE::ActorValue::kAttackDamageMult, attackDamageGain);
-                    avOwner->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kPermanent, RE::ActorValue::kDestructionPowerModifier, spellPowerGain);
+                    avOwner->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kPermanent, RE::ActorValue::kAttackDamageMult, finalAttackDamageGain);
+                    avOwner->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kPermanent, RE::ActorValue::kDestructionPowerModifier, finalSpellPowerGain);
+                    
+                    // Track applied level difference
+                    avOwner->RestoreActorValue(RE::ACTOR_VALUE_MODIFIER::kPermanent, RE::ActorValue::kVariable10, static_cast<float>(levelDiff));
                 }
             }
         }
